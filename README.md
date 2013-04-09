@@ -1,8 +1,11 @@
 # Overview #
 
+This is a solution to the [Sortable Coding Challenge](http://sortable.com/blog/coding-challenge/) by Wes Campaigne. April 2013.
+
 ## Running the Code ##
 
 This solution requires Python 2.7, and uses only the standard library. `./match.py` should work out of the box for matching the sample data. Run `./match.py -h` for usage information.
+
 
 ## Files ##
 
