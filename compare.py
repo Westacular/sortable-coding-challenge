@@ -7,7 +7,7 @@ import sys
 import traceback
 
 
-DEFAULT_OUTPUT_FILE = 'compare.diff'
+DEFAULT_OUTPUT_FILE = 'results.diff'
 
 
 class Result(object):
@@ -51,29 +51,31 @@ class ComparableListing(object):
 def parse_my_arguments(arguments=None):
     '''Processes the arguments to the command using argparse and returns the
     resulting object.'''
-
     parser = argparse.ArgumentParser(
-        description='''Compares two results files, and outputting the differences
-            in product matches as a diff(-ish) file'''
+        description='''Compares two results files, and outputs the differences
+            in product matches in a diff-like format. Differences are given one
+            per line, grouped together by product. Each block begins with name
+            of the product. Listings for that product present only in the first
+            file are shown with "- " at the start of the line, and listings
+            present only in the second file are preceded by "+ ".'''
     )
-
     parser.add_argument(
         'results_a',
-        type=argparse.FileType('r'), metavar='FILENAME',
-        help='first file containing JSON objects (one per line) describing the results'
+        type=argparse.FileType('r'), metavar='FILE1',
+        help='''first results file (containing JSON objects, one per line,
+            naming a product with an array of matching listings)'''
     )
-
     parser.add_argument(
         'results_b',
-        type=argparse.FileType('r'), metavar='FILENAME',
-        help='second file containing JSON objects (one per line) describing the results'
+        type=argparse.FileType('r'), metavar='FILE2',
+        help='''second results file (same format as the first)'''
     )
-
     parser.add_argument(
         '-o', '--output',
-        type=argparse.FileType('w'), metavar='FILENAME',
+        type=argparse.FileType('w'), metavar='OUTPUT_FILE',
         default=DEFAULT_OUTPUT_FILE,
-        help='''write the differences between the results to this file'''
+        help='''write the differences between the results to this file
+            (default is "results.diff")'''
     )
 
     if arguments is not None:
