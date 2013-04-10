@@ -11,9 +11,23 @@ This solution requires Python 2.7, and uses only the standard library. `./match.
 
 `classes.py` contains the classes used to store and process the products and listings data, and some simple related data structures for matching them.
 
-`match.py` is a command-line tool to perform the matching, and contains the high-level logic for the algorithm. Matching the 20,000-listing sample data takes ~10s on my system.
+`match.py` is a command-line tool to perform the matching, and contains the high-level logic for the algorithm. Matching the 20,000-listing sample data takes ~8s on my system.
 
 `compare.py` is a little tool I put together to compare between results sets, as a way to track incremental improvements and regressions in the matches while refining the matching algorithm.
+
+
+## Rationale ##
+
+While it was tempting to use a form of fuzzy string matching or a probabilistic pattern recognition approach, the highly specific nature of the model numbers seen in the data and the desire for minimal false positives suggested that a more exact technique was appropriate.
+
+Instead, I approached the problem of identifying whether a (often rather poorly written) listing matches a given product by trying to recreate the logic I personally would use when deciding if it was a match. Roughly speaking, this means:
+
+* Either the manufacturer or the product family must be clearly identified in the listing.
+* The core, salient portion of the product's model number must be present in the listing.
+* If the model number is just a plain number, the product family name must also be present in the listing.
+* If the model number is actually words, there must be an exact match for those words.
+
+I implemented this logic using a combination of regular expressions, and through testing I iteratively added a few more rules to deal with various corner-cases and exceptions that were observed in the sample data.
 
 
 ## Algorithm ##
