@@ -30,13 +30,10 @@ class ProductMatch(object):
         something too insubstantial. Returns the match if it's deemed valid,
         and None if it isn't.'''
 
-        s = self.listing.searchable_title
-
         out_match = self
-
         # If all we matched was a number, don't count it as a match ... unless
         # that's really all we have to go on.
-        if _re_short_number.match(s[self.begin:self.begin+self.length])\
+        if _re_short_number.match(self.listing.searchable_title[self.begin:self.begin+self.length])\
                 and not (_re_short_number.match(self.product.model) and not self.product.family):
             out_match = None
         # A single character should never be enough to constitute a match.
@@ -197,18 +194,18 @@ class Product(object):
 
         self._token_matchers = []
         if replace_dash:
-            segs = re.split('[- _]+', self.model)
+            tokens = re.split('[- _]+', self.model)
         else:
-            segs = self.model.split()
+            tokens = self.model.split()
 
         # Add words from the family name to the token list
         if self.family:
-            segs += self.family.split()
+            tokens += self.family.split()
 
         # Make sure there are no empty tokens
-        segs = [s for s in segs if s]
+        tokens = [t for t in tokens if t]
 
-        if len(segs) == 1:
+        if len(tokens) == 1:
             # No point; this would be the same as the un-split matcher
             return
 
@@ -222,7 +219,7 @@ class Product(object):
             words_skippable = False
 
         # Scan through the tokens, checking for certain properties
-        for s in segs:
+        for tok in tokens:
             # Rationale for the following:
             #
             # Plain numbers and very short strings have a tendency to produce
@@ -232,23 +229,23 @@ class Product(object):
             # relevant: If the model number contains 'A-200', matching an 'a'
             # and a '200' separately is meaningless.
             if replace_dash and (
-                len(s) < 3 or
-                _re_short_number.match(s)
+                len(tok) < 3 or
+                _re_short_number.match(tok)
             ):
                 return self._create_token_regexes(ignorable, False)
 
         # Now actually make the matchers.
-        for s in segs:
-            if s in ignorable or (self.family and s in self.family):
+        for tok in tokens:
+            if tok in ignorable or (self.family and tok in self.family):
                 required = False
             # Make words/word-like things in model number optional: we want to
             # know if they match but don't mind if they don't.
             #
-            elif words_skippable and _re_word_like.match(s):
+            elif words_skippable and _re_word_like.match(tok):
                 required = False
             else:
                 required = True
-            self._token_matchers.append(Matcher(Product._convert_model_to_regex_string(s), required))
+            self._token_matchers.append(Matcher(Product._convert_model_to_regex_string(tok), required))
 
 
     def match_listing(self, listing):
@@ -257,11 +254,9 @@ class Product(object):
         not, returns None.'''
 
         match = None
-        s = listing.searchable_title
 
         # First check if it matches the holistic matcher
-        m = self._matcher.re.search(s)
-
+        m = self._matcher.re.search(listing.searchable_title)
 
         if m:
             span = m.span()
@@ -274,17 +269,17 @@ class Product(object):
             # Search for segments of model id separately
             amount_matched = 0
             still_matching = True
-            mstart = len(s)
+            mstart = len(listing.searchable_title)
 
-            for mr in self._token_matchers:
-                m = mr.re.search(s)
+            for matcher in self._token_matchers:
+                m = matcher.re.search(listing.searchable_title)
                 if m:
                     span = m.span()
                     mlength = span[1] - span[0]
                     if mlength:
                         amount_matched += mlength
                         mstart = min(mstart, span[0])
-                elif mr.required:
+                elif matcher.required:
                     still_matching = False
                     break
 
@@ -300,16 +295,17 @@ class Manufacturer(object):
     def __init__(self, name, products):
         self.name = name
         self.products = []
-        self.families = set()
-        for p in products:
-            self.add_product(p)
+        self.known_families = set()
+        for P in products:
+            self.add_product(P)
 
     def add_product(self, product):
         self.products.append(product)
+        # Progressively build a set of known family names
         if product.family:
-            self.families.add(product.family)
+            self.known_families.add(product.family)
             if '-' in product.family:
-                self.families.add(product.family.replace('-', ''))
+                self.known_families.add(product.family.replace('-', ''))
 
     def find_matching_products(self, listing):
         '''Returns a list containing a `ProductMatch` object for each of the
@@ -333,18 +329,18 @@ class Manufacturer(object):
         histogram = {}
         for P in self.products:
             segments = P.model.replace('-', ' ').split()
-            for s in [segments[0], segments[-1]]:
-                if s in histogram:
-                    histogram[s] += 1
+            for seg in [segments[0], segments[-1]]:
+                if seg in histogram:
+                    histogram[seg] += 1
                 else:
-                    histogram[s] = 1
+                    histogram[seg] = 1
 
         ignorable_segments = set()
-        for s, count in histogram.iteritems():
+        for seg, count in histogram.iteritems():
             # Reasoning for the criteria:
             #
             # 1) It must be at least 2 characters long; if it's only one
-            #    character, it's unlikely a merchant would drop if from the
+            #    character, it's unlikely a merchant would drop it from the
             #    listing
             #
             # 2) It must be present in at least a third of the products; i.e.,
@@ -355,11 +351,11 @@ class Manufacturer(object):
             #    where there are only a few listings for the manufacturer and
             #    criteria 2) is not enough to make a conclusion
             #
-            if len(s) >= 2 and count > len(self.products) / 3 and count >= 10:
-                ignorable_segments.add(s)
+            if len(seg) >= 2 and count > len(self.products) / 3 and count >= 10:
+                ignorable_segments.add(seg)
                 if verbose:
                     sys.stderr.write('\tMarking "{seg}" from model strings for {man} as optional (present in {count} of {num} models)\n'.format(
-                        seg=s,
+                        seg=seg,
                         man=self.name.capitalize(),
                         count=count,
                         num=len(self.products)

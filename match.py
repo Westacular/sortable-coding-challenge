@@ -68,7 +68,7 @@ def parse_my_arguments(arguments=None):
 
 def read_products_data(products_file):
     '''Reads product data from the passed file handle, creates corresponding
-    `Product` objects, and (as need) `Manufacturer` objects storing lists of
+    `Product` objects, and (as needed) `Manufacturer` objects storing lists of
     associated `Product`s. Returns a list containing all of the `Product`s, in
     the order they were read, and a dict containing all of the
     `Manufacturer`s, keyed by their names.'''
@@ -129,7 +129,7 @@ def find_manufacturers_for_listing(listing, manufacturers):
             if name in title_start:
                 manufacturers_to_search = set([M])
                 break
-            for family in M.families:
+            for family in M.known_families:
                 if family in title_start:
                     manufacturers_to_search.add(M)
 
