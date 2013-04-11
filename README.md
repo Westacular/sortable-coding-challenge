@@ -1,17 +1,18 @@
 # Overview #
 
-This is a solution to the [Sortable Coding Challenge](http://sortable.com/blog/coding-challenge/) by Wes Campaigne. April 2013.
+This is a solution to the [Sortable Coding Challenge](http://sortable.com/blog/coding-challenge/) by Wes Campaigne. Written and submitted in April 2013.
+
 
 ## Running the Code ##
 
-This solution requires Python 2.7, and uses only the standard library. `./match.py` should work out of the box for matching the sample data. Run `./match.py -h` for usage information.
+This solution requires Python 2.7, and uses only the standard library. Clone the repo, and `./match.py` or `python match.py` should work out of the box for matching the sample data. Run `./match.py -h` for usage information.
 
 
 ## Files ##
 
-`classes.py` contains the classes used to store and process the products and listings data, and some simple related data structures for matching them.
-
 `match.py` is a command-line tool to perform the matching, and contains the high-level logic for the algorithm. Matching the 20,000-listing sample data takes ~8s on my system.
+
+`classes.py` contains the classes used to store and process the products and listings data, and some simple related data structures for matching them.
 
 `compare.py` is a little tool I put together to compare between results sets, as a way to track incremental improvements and regressions in the matches while refining the matching algorithm.
 
@@ -20,7 +21,7 @@ This solution requires Python 2.7, and uses only the standard library. `./match.
 
 While it was tempting to use a form of fuzzy string matching or a probabilistic pattern recognition approach, the highly specific nature of the model numbers seen in the data and the desire for minimal false positives suggested that a more exact technique was appropriate.
 
-Instead, I approached the problem of identifying whether a (often rather poorly written) listing matches a given product by trying to recreate the logic I personally would use when deciding if it was a match. Roughly speaking, this means:
+I approached the problem of identifying whether a (often rather poorly written or formatted) listing matches a given product by trying to recreate the logic I personally would use when deciding if it was a match. Roughly speaking, this means:
 
 * Either the manufacturer or the product family must be clearly identified in the listing.
 * The core, salient portion of the product's model number must be present in the listing.
@@ -32,7 +33,7 @@ I implemented this logic using a combination of regular expressions, and through
 
 ## Algorithm ##
 
-The algorithm used in this solution is quite straight-forward.
+The high-level algorithm used in this solution is quite simple and straight-forward.
 
 * While reading in the products, build a list of manufacturers, and associate each product to the appropriate manufacturer.
 * For each product, generate a set of regular expressions to be used against a listing title string to determine if the listing is a match.
@@ -53,7 +54,7 @@ Here is where the complexities lie.
 
 For the listing title:
 * Ignore anything enclosed in parentheses.
-* Ignore anything that comes after "for", "pour", or "für". This implies the listing is of the structure [accessory] for [product(s)].
+* Ignore anything that comes after "for", "pour", or "für". This implies the listing is of the structure "[accessory] for [product(s)]", and we don't want a false positive from matching something in the latter half of that.
 * Ignore anything after the 50th character. The manufacturer, family, and model number are almost always mentioned at the start of the listing.
 
 For the product's family string:
