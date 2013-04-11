@@ -98,7 +98,6 @@ class Product(object):
         else:
             self.family = None
 
-        self.hash_keys = self.model.replace('-', '').split()
         self.listings = []
 
     def associate_listing(self, listing):
